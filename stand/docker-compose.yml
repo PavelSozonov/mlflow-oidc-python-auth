@@ -1,0 +1,36 @@
+services:
+  mlflow-server:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: mlflow_server
+    command: mlflow server --host 0.0.0.0 --port 6000
+    ports:
+      - "6000:6000"
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow-server:6000
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    ports:
+      - "8088:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - mlflow-server
+
+  mlflow-client:
+    image: mlflow-client:latest
+    container_name: mlflow_client
+    volumes:
+      - ./client.py:/app/client.py
+      - ./host_tmp:/tmp
+    command: sleep infinity
+    depends_on:
+      - nginx
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+networks:
+  default:
+    name: mlflow_network
